@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KH1 BINL String Editor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+:root{--bg:#0a0c10;--panel:#0e1117;--border:#1c2333;--accent:#00d4ff;--a2:#ff6b35;--a3:#7b2fff;--text:#c8d6e5;--muted:#c8a800;--green:#00ff9f;--red:#ff3860;--yellow:#ffdd57;}
+body.light{--bg:#f0f2f5;--panel:#ffffff;--border:#c8cdd8;--accent:#0077aa;--a2:#cc4400;--a3:#6600cc;--text:#1a1e2a;--muted:#7a5800;--green:#006633;--red:#cc0033;--yellow:#996600;}
+body.light::before{display:none;}
+body.light header{background:linear-gradient(90deg,#e0e4ec,#eef0f5,#e0e4ec);}
+body.light .dz{background:#f8f9fc;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:9999;}
+header{background:linear-gradient(90deg,#080b12,#0e1520,#080b12);border-bottom:1px solid var(--accent);padding:9px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 0 28px rgba(0,212,255,.15);flex-shrink:0;}
+header h1{font-family:'Orbitron',monospace;font-size:15px;font-weight:900;color:var(--accent);text-shadow:0 0 18px rgba(0,212,255,.6);letter-spacing:2px;}
+.hdr-sub{color:var(--muted);font-size:9px;letter-spacing:1px;}
+.hdr-r{margin-left:auto;display:flex;gap:7px;align-items:center;}
+.btn{font-family:'Share Tech Mono',monospace;font-size:11px;padding:5px 13px;border:1px solid;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;background:transparent;text-decoration:none;display:inline-block;}
+.btn-a{border-color:var(--accent);color:var(--accent);}
+.btn-a:hover{background:rgba(0,212,255,.1);box-shadow:0 0 10px rgba(0,212,255,.3);}
+.btn-g{border-color:var(--green);color:var(--green);}
+.btn-g:hover{background:rgba(0,255,159,.1);}
+.btn-o{border-color:var(--a2);color:var(--a2);}
+.btn-o:hover{background:rgba(255,107,53,.1);}
+.btn-r{border-color:var(--red);color:var(--red);}
+.btn-r:hover{background:rgba(255,56,96,.1);}
+.btn:disabled{opacity:.3;cursor:not-allowed;}
+.toolbar{background:var(--panel);border-bottom:1px solid var(--border);padding:5px 12px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
+.layout{display:grid;grid-template-columns:210px 1fr;flex:1;overflow:hidden;}
+.lpanel{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.phdr{padding:7px 11px;border-bottom:1px solid var(--border);font-family:'Orbitron',monospace;font-size:9px;color:var(--accent);letter-spacing:2px;display:flex;align-items:center;gap:5px;}
+.phdr .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent);}
+.kgr-list{overflow-y:auto;flex:1;}
+.ki{padding:5px 11px;cursor:pointer;border-bottom:1px solid rgba(28,35,51,.5);font-size:11px;display:flex;align-items:center;gap:7px;transition:background .1s;}
+.ki:hover{background:rgba(0,212,255,.05);}
+.ki.active{background:rgba(0,212,255,.1);border-left:2px solid var(--accent);color:var(--accent);}
+.kbadge{margin-left:auto;color:var(--muted);font-size:9px;}
+.mpanel{display:flex;flex-direction:column;overflow:hidden;}
+/* String table */
+.str-panel{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.str-toolbar{padding:4px 10px;border-bottom:1px solid var(--border);background:var(--panel);display:flex;gap:7px;align-items:center;font-size:11px;flex-shrink:0;}
+.searchbar{display:flex;align-items:center;gap:7px;}
+.searchbar input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:3px 7px;outline:none;width:200px;}
+.searchbar input:focus{border-color:var(--accent);}
+.str-list{overflow-y:auto;flex:1;}
+.srow{display:flex;align-items:flex-start;gap:7px;padding:3px 10px;border-bottom:1px solid rgba(28,35,51,.5);cursor:default;min-height:21px;}
+.srow:hover{background:rgba(0,212,255,.03);}
+.srow.editing{background:rgba(64,144,255,.07);}
+.srow.hi{background:rgba(0,212,255,.07);border-left:2px solid var(--accent);}
+.sidx{color:var(--muted);min-width:30px;flex-shrink:0;font-size:10px;padding-top:2px;}
+.stxt{color:var(--green);flex:1;white-space:pre-wrap;word-break:break-all;font-size:11px;line-height:1.4;}
+.stxt.ctrl{color:#3a5a44;font-style:italic;}
+.stxt.raw{color:var(--accent);}
+.sedit{background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:11px;flex:1;padding:2px 5px;outline:none;resize:vertical;min-height:22px;}
+.ebtns{display:flex;gap:3px;flex-shrink:0;padding-top:1px;}
+.ebtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:9px;padding:1px 5px;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;}
+.ebtn:hover{border-color:var(--green);color:var(--green);}
+.ebtn-ok{border-color:var(--green);color:var(--green);}
+.ebtn-del{border-color:var(--red);color:var(--red);}
+.ebtn-del:hover{background:rgba(255,56,96,.08);}
+/* Detail panel */
+.detail-panel{display:flex;flex-direction:column;flex:1;overflow:hidden;border-left:1px solid var(--border);}
+.detail-hdr{padding:5px 11px;border-bottom:1px solid var(--border);background:var(--panel);font-family:'Orbitron',monospace;font-size:9px;color:var(--accent);letter-spacing:2px;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.detail-body{flex:1;overflow-y:auto;padding:10px 14px;}
+.dsec{margin-bottom:14px;}
+.dsec-title{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;padding-bottom:2px;border-bottom:1px solid var(--border);}
+.drow{display:flex;gap:10px;margin-bottom:3px;font-size:10px;}
+.dlbl{color:var(--muted);min-width:80px;flex-shrink:0;}
+.dval{color:var(--text);}
+pre.prev{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--green);background:var(--panel);border:1px solid var(--border);padding:7px;white-space:pre-wrap;word-break:break-word;line-height:1.5;}
+.hexv{font-size:10px;word-break:break-all;line-height:1.8;}
+.hexv .hc{color:var(--yellow);}
+.hexv .ht{color:var(--green);}
+.hexv .he{color:var(--red);}
+.tokv{font-size:11px;color:var(--accent);word-break:break-all;line-height:1.8;}
+/* Bulk translate modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--panel);border:1px solid var(--accent);width:min(820px,95vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,212,255,.2);}
+.modal-hdr{padding:10px 16px;border-bottom:1px solid var(--border);font-family:'Orbitron',monospace;font-size:10px;color:var(--accent);letter-spacing:2px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.modal-hdr .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.modal-body{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;}
+.modal-ta{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:8px;outline:none;resize:none;flex:1;min-height:320px;line-height:1.6;}
+.modal-ta:focus{border-color:var(--accent);}
+.modal-foot{padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:7px;align-items:center;justify-content:flex-end;flex-shrink:0;}
+.modal-note{font-size:10px;color:var(--muted);line-height:1.5;}
+.modal-note strong{color:var(--yellow);}
+/* Drop zone */
+.dz{border:2px dashed var(--border);color:var(--muted);padding:40px;text-align:center;margin:40px;transition:all .2s;}
+.dz.over{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.05);}
+.dz h2{font-family:'Orbitron',monospace;margin-bottom:10px;color:var(--accent);}
+/* Status bar */
+.sbar{padding:3px 12px;background:#060810;border-top:1px solid var(--border);font-size:10px;display:flex;gap:7px;align-items:center;flex-shrink:0;}
+.sok{color:var(--green);} .swn{color:var(--yellow);} .ser{color:var(--red);} .ssep{color:#1c2333;}
+.dc{background:rgba(255,221,87,.1);border:1px solid rgba(255,221,87,.3);color:var(--yellow);padding:2px 7px;font-size:10px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>▸ BINL STRING EDITOR</h1>
+    <div class="hdr-sub">KH1 FINAL MIX PC · BINL STRING TABLE EDITOR</div>
+  </div>
+  <div class="hdr-r">
+    <span id="fileName" style="color:var(--muted);font-size:11px">No file loaded</span>
+    <button class="btn btn-a" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark mode">☀ LIGHT</button>
+    <button class="btn btn-a" onclick="document.getElementById('fi').click()">OPEN FILE</button>
+    <input type="file" id="fi" style="display:none" accept=".binl">
+    <button class="btn btn-r" id="closeBtn" style="display:none" onclick="closeFile()">CLOSE FILE</button>
+    <button class="btn btn-g" id="saveBtn" disabled onclick="doSave()">SAVE FILE</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn btn-a" id="rawBtn" onclick="toggleRaw()">○ RAW MODE</button>
+  <button class="btn btn-g" id="fillBtn" onclick="fillEmpty()">+ FILL SLOT</button>
+  <button class="btn btn-o" onclick="addNewStr()">+ NEW STRING</button>
+  <span class="ssep">|</span>
+  <button class="btn btn-a" onclick="openExport()" title="Export all strings as plain text for translation">⇑ EXPORT TEXT</button>
+  <button class="btn btn-g" onclick="openImport()" title="Paste translated strings back in">⇓ IMPORT TEXT</button>
+  <span class="ssep">|</span>
+  <div class="searchbar">
+    <input id="srch" placeholder="Search strings or hex index…" oninput="render()" autocomplete="off">
+  </div>
+  <span class="ssep">|</span>
+  <div class="dc" id="dc" style="display:none">0 modified</div>
+  <span id="cntSpan" style="color:var(--muted);font-size:10px;margin-left:4px"></span>
+</div>
+
+<div class="layout" id="mainLayout" style="display:none">
+  <!-- Left panel: file info -->
+  <div class="lpanel">
+    <div class="phdr"><div class="dot"></div>FILE INFO</div>
+    <div class="kgr-list" id="infopanel">
+      <div class="ki" style="cursor:default">
+        <span>Count</span><span class="kbadge" id="ipCount">—</span>
+      </div>
+      <div class="ki" style="cursor:default">
+        <span>Empty slots</span><span class="kbadge" id="ipEmpty">—</span>
+      </div>
+      <div class="ki" style="cursor:default">
+        <span>Unknown</span><span class="kbadge" id="ipUnknown">—</span>
+      </div>
+      <div class="ki" style="cursor:default">
+        <span>Data size</span><span class="kbadge" id="ipSize">—</span>
+      </div>
+    </div>
+    <div class="phdr" style="margin-top:auto;border-top:1px solid var(--border);border-bottom:none">SELECTION</div>
+    <div class="kgr-list" id="selInfo" style="max-height:160px">
+      <div class="ki" style="cursor:default;color:var(--muted);font-style:italic">No string selected</div>
+    </div>
+  </div>
+
+  <!-- Main area: string list + detail -->
+  <div class="mpanel">
+    <div style="display:flex;flex:1;min-height:0;overflow:hidden">
+      <!-- String list (left ~60%) -->
+      <div class="str-panel" style="width:58%">
+        <div class="str-list" id="strlist"></div>
+      </div>
+      <!-- Detail (right ~42%) -->
+      <div class="detail-panel">
+        <div class="detail-hdr"><div class="dot"></div><span id="dtitle">DETAIL</span></div>
+        <div class="detail-body" id="detail">
+          <div style="color:var(--muted);padding:20px;font-style:italic">Click a string to inspect it.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sbar">
+      <span class="sok">READY</span><span class="ssep">|</span>
+      <span id="st">Open a .binl file to begin</span>
+      <span class="ssep" style="margin-left:auto">|</span>
+      <span id="stCount" style="color:var(--muted)">0 strings</span>
+    </div>
+  </div>
+</div>
+
+<!-- Drop zone (shown when no file loaded) -->
+<div id="dz" class="dz">
+  <h2>DROP BINL FILE HERE</h2>
+  <p>or click <strong>OPEN FILE</strong> above</p>
+  <p style="margin-top:10px;font-size:10px;color:var(--muted)">Supports: .binl string table files (EvMsgUK format)</p>
+</div>
+
+<script>
+// ── KH1 character table ──────────────────────────────────────────────────────
+const ICON_IMGS={
+  0x82:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAUCAMAAACzvE1FAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMAGRob/P1XhCkYAAAAeElEQVR4XgXAgW0CMAADMCct/P8vWjNF12UTU3+RK6+eev2Nk97TtPmmBb3ALYoUCJTuAVPI91Ogn1v6aQFO73ELAL0FAKIJAEw3AJAWAGz3qSxet5h2y4tlaeg5DGKZ6HsJNnmZHJ8ngpUubl+3mEx+aE7TpGn4B9EbMKoz17S6AAAAAElFTkSuQmCCCg==',
+  0x83:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAMAAABFjsb+AAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMA/P0aGxkcJ0ap6wAAAHdJREFUeAFlyscRwwAAAkGRTP8dm5Gzdfx2ON75uGReEcg/qVcELxauXxSAFvq2wYn+kCcsWH6M7YQt86KgW4n5+4Y6sdJWDxLJyWrxPJZsZDtFmfNWELKmHUKzCencFKNTnreyltaA2BHdZk7MlmgOKYk3Lcux7ngHAvavvOJQAAAAAElFTkSuQmCCCg==',
+  0x84:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAMAAABhEH5lAAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMAGhkb/P0cFAynwwAAAHRJREFUeAFljwEKBCEMA500uf7/x0fRRZYNomUYA107Kn6wbsCO2xeqvWd3HRLbZ96M0HE4bN5ITh6tPFItulknZsxXyqfwRv1BZIWPZXgR9aqULizNrwAqzYVUnj5LEoVUVXtbzJA5PEvQLSFw31actLOVPzwkAeX9epnUAAAAAElFTkSuQmCCCg==',
+  0x85:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAMAAABYi/ZGAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMA/BoZ/RvkRsPVAAAAaUlEQVR4AWXMSwpEMQhEUcv67H/JDfKQDjq6ORSpObHOqQ9R14S8GzMB0PRaB5ASAVVlf6oE8TT3kwBfea3jrXrLkgJkjV3Nttxd75ZaWauw9kjMy7OboAG0/0eZQ3ppGNDEi3VN18jNH1lxAaklNJKlAAAAAElFTkSuQmCCCg==',
+  0x86:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAATCAMAAACTKxybAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMAGRob/P1XhCkYAAAAX0lEQVR4AVXMAQoDQQhDUY0/uf+RO9LdKQ0IPgIpbCcOsUsHsIeqE0K+qMSbkFocbc2BOALSC5tAmFpJoNl/s6g3DX0hrB/M6GXbMbeJ7QeTtO50/qfnNu3EeaBR7/QHXFECQiBzQmoAAAAASUVORK5CYIIK',
+  0x87:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAUCAMAAABlGZcgAAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMA/Br9Gxkc9hrLpQAAAGdJREFUeAFVzEEOAyAMA8GsHer//7gVKILubaTEdRNdL4N1uezXYjfsBBd0VUv1MThVqJaDco6jrsKBJID260Zy+EsyNnHP+tqOh1YHm3kIkXD62Gdr2ZuCmRquywrhYSfRYw0n/fELM2QB2lWHvgAAAAAASUVORK5CYIIK',
+  0x88:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAUCAMAAACzvE1FAAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMaGfwbAP0cDdzU9gAAAIhJREFUeAEVioEJAEEMwqI93/03fpQWNISmSWwnrl3cuN27aU1zkuDuAGfHpxuT8AwdQlOgIWYdTtz8GtDgpJoUHbCXHOLVwTk27rHF+EAroQGEWpQcaFty4GwN6EMMvDSCk8DO42FvH0x+vNf0tLR+A1cHcWnvDTzZdpztN/DYbrTOWyT37i0/INoDQx81BK4AAAAASUVORK5CYIIK',
+  0x89:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAMAAABhEH5lAAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMA/BoZ/RscMF7TWgAAAH9JREFUeAFFj1EORCEIxCzg9v43Xp3EPL7GUkTXV7Wr6uWuvQqYkZBGpx0c0ZBapYx9xqAvulzMPXhQYkmvIPY5cYlEKjzop81AJGNvASfSlrtxkDGk4bZqnPdoca5LjJAxufK49JDEhpB+JFZWAeyQbHREDMmE47v4VT7Y3/EPyXgClw86DY8AAAAASUVORK5CYIIK',
+  0x8A:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAMAAABFjsb+AAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMA/P0aGxlLgjFLAAAAdElEQVR4XlWQwQ0DIQDDsAHvP3KFdO0VP6P4kYyLhXvcoLSuyMD8j+LQvw0qzXhbEcWwV/TQGtufWCbM48659yoClWgNEgLS7LEspYp85qABJs5xGBsDM+E7bAWPy7xXmfRmYyphXgdMCrD7z5RjX+yZ59IPuMICddmtTtsAAAAASUVORK5CYIIK',
+  0x8B:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAASCAMAAABsDg4iAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMA/P0aGRuXujLlAAAAgUlEQVR4AU3MQY4DMQzEQJG2+f8nbzDGbFInoUFoPg6teSy41wm66zbubBD7hgR+jhJgPiCTNRniuWUIjRKwF60VkMwpixSDzD2zVhUCSHTmsVEE4cyroFLg3bYRSNiaa6GSaO1v+RDq/2kUBNW8dmVSN7wCKG1+oAbs+bWO7TXXH0XmAvvMtc1zAAAAAElFTkSuQmCCCg==',
+  0x94:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAATCAMAAACqTK3AAAAAIVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHkbfbtw0AAAACnRSTlMAGhn9/BvzFvv4kSX6vAAAAHlJREFUeAFdjEsKREEMAlWT+Xj/Aw90eKEZV1Jo4eT9+n6EOypBTrikPZ1JTZPvfQQol4KloG8FQxnVrKyMUKEItJIQLAE03ONVyjw2ZE3zZpB+UD2otOg0elYXkv9diuA9hgAtIKF2xerxVdjHpVoL7TRDE1eUxFN/wrECdX9gtPwAAAAASUVORK5CYIIK',
+  0x95:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAATCAMAAACqTK3AAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMA/BoZ/RvkRsPVAAAAb0lEQVR4XlVOAQ7EIAySQvn/k88Tt3RNTAlQZGUg1PoMTQLmoHQsbbseMx69YF4wM84aIeXIw+TCuAuko7yU+ui8pkBq79G7kRQxRGD5G65t3A89Sm2GqzGL9z/YMl+q8lURyDEq+7JS08kY0VLQD/TWAXfIigSUAAAAAElFTkSuQmCCCg==',
+  0x96:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAARCAMAAADqmnyMAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMAGhn8/Rv+TkwPAAAAaElEQVR4AWWMAQpEUQgCVcv7H3n5RBBvBxAYVBxk4YVV1Y9TlPjppWGG18kNFFnHdgSgBBkLZ/Yl1yrESkTT87iRtI7bEjP3A6xNC0sR0Be0e6WJrvnqxOkZ8uwoVwnp/V/PuIx/1v0A7qUBY+H5TXQAAAAASUVORK5CYIIK',
+  0x97:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAATCAMAAAB4HKeYAAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMAGvwZ/RscV9cZugAAAGVJREFUeAFdjkFqwAAMw2Q7qf//48HYaKhuQgYMII+nDgCsm0QbN4Dm4Y9YMOFlRI+rwe8g42Vk7+qJXFWM2P6y0MXixctcn0+vmFxfnE/XcQvv7aG6/qDev4DsRFr5v6i2OwH4AR5fAcQcpXqsAAAAAElFTkSuQmCCCg==',
+  0x98:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAASCAMAAACKJ8VmAAAAGFBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkYAHka7JwJjAAAAB3RSTlMA/BoZG/0clRUrIgAAAGlJREFUeAFNzjEOAwEIA8G1gfj/P46E7hKmcrGFWaXp5ih1RSnzcHbWKNoy4eVKYMSPlWFklp3ELVSJpETTBR5i7K4yq0Oaq7e5WuTD5aDmskhxWUxxdZD5K8lEzxXbGu9QEkmj9KldvL45bQHFLXKK8AAAAABJRU5ErkJgggo=',
+  0x99:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAARCAMAAADnhAzLAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMA/BoZG/2lC9DyAAAAXklEQVR4AVWOSQ4AMAgC2fT/T27Cyc5FSyiIgpDGR8bm6CiuRXs0pkOdZbo10fdbEVFuLLvjpmZrXhxW9f4Xnr6TRv+SEeJDhAcXT/7C7BrQDh1ZDrlpvZwhZ7juGw+f8QEzVxa1lgAAAABJRU5ErkJgggo=',
+  0x9A:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAQCAMAAAAs2N9uAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMAGRob/P1XhCkYAAAAYklEQVR4XgXAgQ3AMAgDMBNS/v94EyDXXgPA9u1kcreAXAB7gAuABsx1AGlBd647SfpywTykvb5wgxQAtugCgI55AMA8cwDAvAYAMB+3ALC3eC8AcgH7eklm7zUAM+31TeAHNBcCe7tPTpgAAAAASUVORK5CYIIK',
+  0x9B:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAPCAMAAADeWG8gAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMA/BoZG/2lC9DyAAAAV0lEQVR4XmWPUQrAMAxCoxrvf+RBF7a18yfwNII1suj6iAgSdPQScV1jGPCYyu2hPloM3GozoT0W7Yio8EBdfaIU/Hv0Xr8iab3A0CyMaMnBU2MCDczUC4znAQsRygwyAAAAAElFTkSuQmCCCg==',
+  0x9C:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAATCAMAAACqTK3AAAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMAGvwZ/Ruwxu9OAAAAYElEQVR4AWXMSQpEUQxC0atp9r/kgp9AeNQZKspQRYU4lW7b6WCoc/vwhNpga4EsDnLQ4iHj4qGksjjzo+Tsj/uSNB+LFc0Is/KvdPC5aZijDKgOOPId3VTJS23xQsX6AdTyAQUykhy5AAAAAElFTkSuQmCCCg==',
+  0x9D:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAMAAAC6V+0/AAAAFVBMVEUAHkYAHkYAHkYAHkYAHkYAHkYAHkarr9C6AAAABnRSTlMAGvwZ/Ruwxu9OAAAAeElEQVR4AVWOAQoAQQgCVcv/P/lgWeFWIGwMCdWujUeczCjJj0d32aRMw9qNLjOnUOShDMDmC4xxR06BBYDToxUB60QxhmhJreowdtA8Fzqq6yUALlAooyocbB5yf8z+SZ/Vw26f8rC5JaWPT0KTdPLr4moUaXnWD3cGAb3uK5luAAAAAElFTkSuQmCCCg==',
+};
+const KH1_TBL=(()=>{
+  const t={};
+  [[0x01,' '],[0x20,'—'],[0x21,'0'],[0x22,'1'],[0x23,'2'],[0x24,'3'],[0x25,'4'],
+   [0x26,'5'],[0x27,'6'],[0x28,'7'],[0x29,'8'],[0x2A,'9'],
+   [0x2B,'A'],[0x2C,'B'],[0x2D,'C'],[0x2E,'D'],[0x2F,'E'],[0x30,'F'],[0x31,'G'],
+   [0x32,'H'],[0x33,'I'],[0x34,'J'],[0x35,'K'],[0x36,'L'],[0x37,'M'],[0x38,'N'],
+   [0x39,'O'],[0x3A,'P'],[0x3B,'Q'],[0x3C,'R'],[0x3D,'S'],[0x3E,'T'],[0x3F,'U'],
+   [0x40,'V'],[0x41,'W'],[0x42,'X'],[0x43,'Y'],[0x44,'Z'],
+   [0x45,'a'],[0x46,'b'],[0x47,'c'],[0x48,'d'],[0x49,'e'],[0x4A,'f'],[0x4B,'g'],
+   [0x4C,'h'],[0x4D,'i'],[0x4E,'j'],[0x4F,'k'],[0x50,'l'],[0x51,'m'],[0x52,'n'],
+   [0x53,'o'],[0x54,'p'],[0x55,'q'],[0x56,'r'],[0x57,'s'],[0x58,'t'],[0x59,'u'],
+   [0x5A,'v'],[0x5B,'w'],[0x5C,'x'],[0x5D,'y'],[0x5E,'z'],
+   [0x5F,'!'],[0x60,'?'],[0x61,'&'],[0x62,'%'],[0x63,'+'],[0x66,'/'],[0x67,'*'],
+   [0x68,'.'],[0x69,','],[0x6A,'·'],[0x6B,':'],[0x6C,';'],[0x6D,'…'],[0x6E,'-'],
+   [0x6F,'ー'],[0x70,'~'],[0x71,"'"],[0x72,'"'],[0x74,'('],[0x75,')'],
+   [0x76,'['],[0x77,']'],[0x78,'<'],[0x79,'>'],[0x7C,'↑'],[0x7D,'↓'],
+   [0x7E,'→'],[0x7F,'←'],[0x80,'●'],[0x81,'■'],[0x8C,'○'],[0x8D,'×'],
+   [0x8E,'△'],[0x8F,'□'],[0x90,'▲'],[0x91,'▼'],[0x92,'►'],[0x93,'◄'],
+   [0xA9,'®'],[0xC8,'Œ'],[0xC9,'œ'],[0xCA,'¡'],[0xCB,'¿'],
+   [0xCC,'À'],[0xCD,'Á'],[0xCE,'Â'],[0xCF,'Ä'],[0xD0,'Ç'],
+   [0xD1,'È'],[0xD2,'É'],[0xD3,'Ê'],[0xD4,'Ë'],[0xD5,'Ì'],[0xD6,'Í'],
+   [0xD7,'Î'],[0xD8,'Ï'],[0xD9,'Ñ'],[0xDA,'Ò'],[0xDB,'Ó'],[0xDC,'Ô'],
+   [0xDD,'Ö'],[0xDE,'Ù'],[0xDF,'Ú'],[0xE0,'Û'],[0xE1,'Ü'],[0xE2,'ß'],
+   [0xE3,'à'],[0xE4,'á'],[0xE5,'â'],[0xE6,'ä'],[0xE7,'ç'],[0xE8,'è'],
+   [0xE9,'é'],[0xEA,'ê'],[0xEB,'ë'],[0xEC,'ì'],[0xED,'í'],[0xEE,'î'],
+   [0xEF,'ï'],[0xF0,'ñ'],[0xF1,'ò'],[0xF2,'ó'],[0xF3,'ô'],[0xF4,'ö'],
+   [0xF5,'ù'],[0xF6,'ú'],[0xF7,'û'],[0xF8,'ü'],[0xF9,'°'],
+   [0xFB,'》'],[0xFC,'《'],
+   // Special/icon chars
+   [0x64,'[-]'],[0x65,'[mX]'],[0x73,'[゛b]'],
+   [0x82,'[Potion]'],[0x83,'[Tent]'],[0x84,'[Gem]'],[0x85,'[Ability]'],[0x86,'[Key]'],
+   [0x87,'[Staff]'],[0x88,'[Shield]'],[0x89,'[Ring]'],[0x8A,'[Hat]'],[0x8B,'[Mickey]'],
+   [0x94,'[Gummi0]'],[0x95,'[Gummi1]'],[0x96,'[Gummi2]'],[0x97,'[Gummi3]'],[0x98,'[Gummi4]'],
+   [0x99,'[Gummi5]'],[0x9A,'[Gummi6]'],[0x9B,'[Gummi7]'],[0x9C,'[Gummi8]'],[0x9D,'[Gummi9]'],
+   [0xC4,'[III]'],[0xC5,'[VII]'],[0xC6,'[VIII]'],[0xC7,'[X]'],[0xFA,'[---]'],
+  ].forEach(([b,c])=>t[b]=c);
+  return t;
+})();
+
+const KH1_ENC=(()=>{
+  const e={};
+  for(const[b,c]of Object.entries(KH1_TBL)){const bv=parseInt(b);if(!(c in e))e[c]=bv;}
+  e[' ']=0x01;e['\n']=0x02;
+  return e;
+})();
+
+// ── Decode / Encode / Token ──────────────────────────────────────────────────
+function decode(raw){
+  let o='',i=0;
+  while(i<raw.length){
+    const b=raw[i];
+    if(b===0x00||b===0x04)break;
+    if(b===0x01){o+=' ';i++;continue;}
+    if(b===0x02){o+='\n';i++;continue;}
+    if(b===0x03){o+='|';i++;continue;}
+    if(b===0x05||b===0x06||b===0x07||b===0x12){i+=3;continue;}
+    if(b===0x08||b===0x10||b===0x11){i++;continue;}
+    if(b===0x09||b===0x0C||b===0x0E||b===0x0F){i+=2;continue;}
+    if(b===0x0A){i+=(i+1<raw.length&&raw[i+1]!==0)?2:4;continue;}
+    if(b===0x0B||b===0x0D){i+=4;continue;}
+    if(b<0x20){i+=2;continue;}
+    if(b===0xFF){o+=' ';i++;continue;}
+    const c=KH1_TBL[b];
+    if(c) o+=c;
+    else  o+=`[${b.toString(16).padStart(2,'0').toUpperCase()}]`;  // unknown byte
+    i++;
+  }
+  return o.trim();
+}
+
+function encode(text){
+  const bytes=[];
+  for(const c of text){
+    if(c==='\n'){bytes.push(0x02);continue;}
+    const b=KH1_ENC[c];if(b!==undefined)bytes.push(b);
+  }
+  return new Uint8Array(bytes);
+}
+
+function toTok(raw){
+  const t=[];let i=0;
+  while(i<raw.length){
+    const b=raw[i];
+    if(b===0x00||b===0x04)break;
+    if(b===0x01){t.push('[sp]');i++;continue;}
+    if(b===0x02){t.push('[lf]');i++;continue;}
+    if(b===0x03){t.push('[|]');i++;continue;}
+    if(b===0x05||b===0x06||b===0x07||b===0x12){
+      const nm={0x05:'SYNC',0x06:'DISP',0x07:'XADJ',0x12:'U12'}[b];
+      const v=((raw[i+1]||0)|((raw[i+2]||0)<<8)).toString(16).toUpperCase().padStart(4,'0');
+      t.push(`[${nm}:${v}]`);i+=3;continue;
+    }
+    if(b===0x08){t.push('[F8]');i++;continue;}
+    if(b===0x0A){
+      const nx=raw[i+1]||0;
+      if(nx!==0){t.push(`[0A:${nx.toString(16).padStart(2,'0').toUpperCase()}]`);i+=2;}
+      else{t.push(`[SP:00${(raw[i+2]||0).toString(16).padStart(2,'0').toUpperCase()}${(raw[i+3]||0).toString(16).padStart(2,'0').toUpperCase()}]`);i+=4;}
+      continue;
+    }
+    if(b===0x0B||b===0x0D){
+      const nm=b===0x0B?'XSET':'0D';
+      t.push(`[${nm}:${Array.from(raw.slice(i+1,i+4)).map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join('')}]`);i+=4;continue;
+    }
+    if(b>=0x09&&b<=0x1F){t.push(`[${b.toString(16).padStart(2,'0').toUpperCase()}:${(raw[i+1]||0).toString(16).padStart(2,'0').toUpperCase()}]`);i+=2;continue;}
+    if(b===0xFF){t.push('[FF]');i++;continue;}
+    const c=KH1_TBL[b];
+    if(c&&!c.startsWith('{')&&c!==''){t.push(c);i++;continue;}
+    t.push(`[${b.toString(16).padStart(2,'0').toUpperCase()}]`);i++;
+  }
+  return t.join('');
+}
+
+function fromTok(s){
+  const bytes=[];let i=0;
+  const NAMED={'sp':0x01,'lf':0x02,'|':0x03,'F8':0x08,'FF':0xFF};
+  while(i<s.length){
+    if(s[i]==='['){
+      const cl=s.indexOf(']',i);if(cl===-1){i++;continue;}
+      const tok=s.slice(i+1,cl);i=cl+1;
+      if(tok in NAMED){bytes.push(NAMED[tok]);continue;}
+      const co=tok.indexOf(':');
+      if(co!==-1){
+        const nm=tok.slice(0,co),hx=tok.slice(co+1);
+        const OPS={SYNC:0x05,DISP:0x06,XADJ:0x07,U12:0x12};
+        if(nm in OPS){const v=parseInt(hx,16);bytes.push(OPS[nm],v&0xFF,(v>>8)&0xFF);continue;}
+        if(nm==='SP'){bytes.push(0x0A);for(let j=0;j<hx.length;j+=2)bytes.push(parseInt(hx.slice(j,j+2),16));continue;}
+        const op=parseInt(nm,16);bytes.push(op);
+        for(let j=0;j<hx.length;j+=2)bytes.push(parseInt(hx.slice(j,j+2),16));continue;
+      }
+      const v=parseInt(tok,16);if(!isNaN(v))bytes.push(v);
+    } else {
+      const c=s[i];if(c in KH1_ENC)bytes.push(KH1_ENC[c]);i++;
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+// ── BINL parse / build ───────────────────────────────────────────────────────
+// Magic is now stored per-file in fileMagic
+let strings=[];
+let fileCount=0;
+let fileUnknown=0;
+let fileMagic='EvMsgUK';
+let fname='';
+let editIdx=null;
+let rawMode=false;
+let dirty=false;
+
+// All known BINL magic values
+const KNOWN_MAGICS=['EvMsgUK','EvMsgUS','EvMsgSP','EvMsgIT','EvMsgGR','EvMsgFR','EvMsgFM'];
+// JP (EvMsgFM) uses 11-byte header (no unknown field) and different char encoding
+const JP_MAGIC='EvMsgFM';
+
+function parseBINL(ab){
+  const raw=new Uint8Array(ab);
+  const magic=String.fromCharCode(...raw.slice(0,7));
+  if(!KNOWN_MAGICS.includes(magic))throw new Error(`Unknown magic: "${magic}". Supported: ${KNOWN_MAGICS.join(', ')}`);
+  const count=raw[7]|(raw[8]<<8)|(raw[9]<<16)|(raw[10]<<24);
+  const isJP=(magic===JP_MAGIC);
+  // JP has no unknown field: header = 7+4 = 11 bytes
+  // All others: header = 7+4+4 = 15 bytes
+  const unknown=isJP?0:(raw[11]|(raw[12]<<8)|(raw[13]<<16)|(raw[14]<<24));
+  const dataStart=isJP?11:15;
+  const out=[];
+  let pos=dataStart;
+  for(let i=0;i<count&&pos<raw.length;i++){
+    const start=pos;
+    while(pos<raw.length){
+      const b=raw[pos];
+      if(b===0x04||b===0x00)break;
+      else if(b===0x05||b===0x06||b===0x07)pos+=3;
+      else if(b===0x0B||b===0x0D)pos+=4;
+      else if(b===0x0A)pos+=(pos+1<raw.length&&raw[pos+1]!==0)?2:4;
+      else if(b>=0x09&&b<=0x1F)pos+=2;
+      else pos++;
+    }
+    const rb=raw.slice(start,pos);
+    out.push({index:i,rawBytes:new Uint8Array(rb),text:decode(rb)});
+    pos++;
+  }
+  return{strings:out,count,unknown,magic};
+}
+
+function buildBINL(){
+  const count=strings.length;
+  let dsize=0;for(const s of strings)dsize+=s.rawBytes.length+1;
+  const isJP=(fileMagic===JP_MAGIC);
+  const headerSize=isJP?11:15;
+  const out=new Uint8Array(headerSize+dsize);
+  for(let i=0;i<7;i++)out[i]=fileMagic.charCodeAt(i);
+  out[7]=count&0xFF;out[8]=(count>>8)&0xFF;out[9]=(count>>16)&0xFF;out[10]=(count>>24)&0xFF;
+  if(!isJP){out[11]=fileUnknown&0xFF;out[12]=(fileUnknown>>8)&0xFF;out[13]=(fileUnknown>>16)&0xFF;out[14]=(fileUnknown>>24)&0xFF;}
+  let pos=headerSize;
+  for(const s of strings){out.set(s.rawBytes,pos);pos+=s.rawBytes.length;out[pos++]=0x00;}
+  return out.buffer;
+}
+
+// ── File I/O ─────────────────────────────────────────────────────────────────
+function loadBuffer(ab, name){
+  try{
+    const p=parseBINL(ab);
+    strings=p.strings;fileCount=p.count;fileUnknown=p.unknown;fileMagic=p.magic;
+    fname=name;
+    document.getElementById('fileName').textContent=name;
+    editIdx=null;dirty=false;
+    document.getElementById('saveBtn').disabled=true;
+    document.getElementById('saveBtn').style.cssText='';
+    document.getElementById('closeBtn').style.display='inline-block';
+    document.getElementById('dz').style.display='none';
+    document.getElementById('mainLayout').style.display='grid';
+    const empty=strings.filter(s=>s.index>0&&s.rawBytes.length===0).length;
+    document.getElementById('ipCount').textContent=fileCount;
+    document.getElementById('fileName').textContent=fname+' ['+p.magic.replace('EvMsg','')+']';
+    document.getElementById('ipEmpty').textContent=empty;
+    document.getElementById('ipUnknown').textContent='0x'+fileUnknown.toString(16).toUpperCase();
+    let dsize=0;strings.forEach(s=>dsize+=s.rawBytes.length+1);
+    document.getElementById('ipSize').textContent=dsize+' bytes';
+    render();
+    stat(`Loaded ${fileCount} strings · ${empty} empty slot${empty!==1?'s':''}  ·  game index = array index (0-based)`,'ok');
+  }catch(err){stat('Parse error: '+err.message,'err');}
+}
+
+document.getElementById('fi').onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();r.onload=ev=>loadBuffer(ev.target.result,file.name);r.readAsArrayBuffer(file);
+};
+
+// Drag and drop
+const dz=document.getElementById('dz');
+document.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)dz.classList.remove('over');});
+document.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('over');
+  const file=e.dataTransfer.files[0];if(!file)return;
+  const r=new FileReader();r.onload=ev=>loadBuffer(ev.target.result,file.name);r.readAsArrayBuffer(file);
+});
+
+function doSave(){
+  const ab=buildBINL();
+  const blob=new Blob([ab],{type:'application/octet-stream'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=fname.replace(/\.binl$/i,'')+'_patched.binl';
+  a.click();URL.revokeObjectURL(url);
+  stat('Saved: '+a.download,'ok');
+}
+
+// ── Render string list ────────────────────────────────────────────────────────
+function render(){
+  const q=document.getElementById('srch').value.toLowerCase();
+  const list=document.getElementById('strlist');
+  list.innerHTML='';let shown=0;
+
+  for(const s of strings){
+    // BINL is 0-based, no phantom index to skip
+    const gameIdx=s.index;
+    const hexStr=gameIdx.toString(16).toUpperCase().padStart(3,'0');
+    const dispText=rawMode?toTok(s.rawBytes):s.text;
+    if(q&&!dispText.toLowerCase().includes(q)&&!hexStr.toLowerCase().includes(q))continue;
+
+    const row=document.createElement('div');
+    row.className='srow';row.dataset.idx=s.index;row.dataset.editText=dispText;
+    row.title='Double-click to edit';
+    row.ondblclick=e=>{e.preventDefault();startEdit(s.index,row.dataset.editText,row);};
+    row.onclick=()=>showDetail(s.index);
+
+    const idxSpan=document.createElement('span');
+    idxSpan.className='sidx';idxSpan.textContent=hexStr;
+
+    const txtSpan=document.createElement('span');
+    txtSpan.className='stxt';
+    if(rawMode){txtSpan.textContent=dispText||'[empty]';txtSpan.classList.add('raw');}
+    else if(s.text){txtSpan.textContent=s.text.replace(/\n/g,' ↵ ');}
+    else{
+      txtSpan.textContent=s.rawBytes.length?`[${Array.from(s.rawBytes).map(b=>b.toString(16).padStart(2,'0')).join(' ')}]`:'[empty]';
+      txtSpan.classList.add('ctrl');
+    }
+
+    row.appendChild(idxSpan);row.appendChild(txtSpan);
+
+    if(s.index>fileCount){
+      const del=document.createElement('button');
+      del.className='ebtn ebtn-del';del.textContent='✕';del.style.cssText='flex-shrink:0;';
+      del.onclick=e=>{e.stopPropagation();removeStr(s.index);};
+      row.appendChild(del);
+    }
+
+    list.appendChild(row);shown++;
+  }
+
+  const modTag=dirty?' · MODIFIED':'';
+  document.getElementById('cntSpan').textContent=`${shown} strings${modTag}`;
+  document.getElementById('stCount').textContent=`${shown} strings${modTag}`;
+  const dcEl=document.getElementById('dc');
+  const mods=strings.filter((s,i)=>i>0).length; // placeholder
+  if(dirty){dcEl.style.display='block';dcEl.textContent='MODIFIED';}
+  else{dcEl.style.display='none';}
+  if(!shown)list.innerHTML='<div style="color:var(--muted);padding:20px;font-style:italic">No strings match.</div>';
+}
+
+// ── Detail view ───────────────────────────────────────────────────────────────
+function showDetail(idx){
+  const s=strings[idx];if(!s)return;
+  document.querySelectorAll('.srow').forEach(r=>r.classList.remove('hi'));
+  const row=document.querySelector(`.srow[data-idx="${idx}"]`);
+  if(row){row.classList.add('hi');row.scrollIntoView({block:'nearest'});}
+
+  const gameIdx=idx;
+  document.getElementById('dtitle').textContent=`STRING 0x${gameIdx.toString(16).toUpperCase().padStart(3,'0')}`;
+
+  // Update selection info panel
+  document.getElementById('selInfo').innerHTML=`
+    <div class="ki" style="cursor:default"><span>Game index</span><span class="kbadge" style="color:var(--accent)">0x${gameIdx.toString(16).toUpperCase().padStart(3,'0')}</span></div>
+    <div class="ki" style="cursor:default"><span>Array pos</span><span class="kbadge">${idx}</span></div>
+    <div class="ki" style="cursor:default"><span>Size</span><span class="kbadge">${s.rawBytes.length}+1 B</span></div>
+  `;
+
+  // Hex view
+  const raw=s.rawBytes;
+  const hexParts=[];let i=0;
+  while(i<raw.length){
+    const b=raw[i];const h=b.toString(16).padStart(2,'0').toUpperCase()+' ';
+    if(b in ICON_IMGS){hexParts.push(`<span class="ht" title="0x${b.toString(16).toUpperCase().padStart(2,'0')}"><img src="${ICON_IMGS[b]}" style="width:16px;height:16px;vertical-align:middle;image-rendering:pixelated;margin:0 1px"></span>`);i++;}
+    else if(b===0x01||b===0x02||b===0x03||(b>=0x20&&b!==0xFF)){hexParts.push(`<span class="ht">${h}</span>`);i++;}
+    else if(b===0x05||b===0x06||b===0x07||b===0x12){
+      hexParts.push(`<span class="hc">${h}${(raw[i+1]||0).toString(16).padStart(2,'0').toUpperCase()} ${(raw[i+2]||0).toString(16).padStart(2,'0').toUpperCase()} </span>`);i+=3;
+    } else if(b===0x0A){
+      const nx=raw[i+1]||0;
+      if(nx!==0){hexParts.push(`<span class="hc">${h}${nx.toString(16).padStart(2,'0').toUpperCase()} </span>`);i+=2;}
+      else{hexParts.push(`<span class="hc">${h}00 ${(raw[i+2]||0).toString(16).padStart(2,'0').toUpperCase()} ${(raw[i+3]||0).toString(16).padStart(2,'0').toUpperCase()} </span>`);i+=4;}
+    } else if(b===0x0B||b===0x0D){
+      hexParts.push(`<span class="hc">${h}${Array.from(raw.slice(i+1,i+4)).map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join(' ')} </span>`);i+=4;
+    } else if(b>=0x09&&b<=0x1F){hexParts.push(`<span class="hc">${h}${(raw[i+1]||0).toString(16).padStart(2,'0').toUpperCase()} </span>`);i+=2;}
+    else{hexParts.push(`<span class="hc">${h}</span>`);i++;}
+  }
+  hexParts.push('<span class="he">00</span>');
+
+  document.getElementById('detail').innerHTML=`
+    <div class="dsec"><div class="dsec-title">Text Preview</div>
+      <pre class="prev">${s.text.replace(/&/g,'&amp;').replace(/</g,'&lt;')||'(no printable text)'}</pre>
+    </div>
+    <div class="dsec"><div class="dsec-title">Token Format &nbsp;<span style="font-size:9px;color:var(--muted)">(used in RAW edit mode)</span></div>
+      <div class="tokv">${toTok(s.rawBytes).replace(/</g,'&lt;')||'[empty]'}</div>
+    </div>
+    <div class="dsec"><div class="dsec-title">Hex Bytes &nbsp;<span style="color:var(--yellow)">■ ctrl</span> &nbsp;<span style="color:var(--green)">■ text</span> &nbsp;<span style="color:var(--red)">■ terminator</span></div>
+      <div class="hexv">${hexParts.join('')}</div>
+    </div>`;
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────────
+function startEdit(idx,curText,rowEl){
+  if(editIdx===idx)return;
+  if(editIdx!==null){
+    editIdx=null;render();
+    setTimeout(()=>{
+      for(const r of document.querySelectorAll('.srow')){
+        if(Number(r.dataset.idx)===idx){startEdit(idx,r.dataset.editText||'',r);return;}
+      }
+    },10);
+    return;
+  }
+  editIdx=idx;rowEl.classList.add('editing');rowEl.innerHTML='';
+  const idxSpan=document.createElement('span');
+  idxSpan.className='sidx';idxSpan.textContent=idx.toString(16).toUpperCase().padStart(3,'0');
+  const inp=document.createElement('textarea');
+  inp.className='sedit';inp.value=curText;
+  inp.rows=Math.max(1,(curText.match(/\n/g)||[]).length+1);
+  inp.style.flex='1';inp.dataset.raw=rawMode?'1':'0';
+  const btns=document.createElement('div');btns.className='ebtns';
+  const ok=document.createElement('button');ok.className='ebtn ebtn-ok';ok.textContent='✓ SAVE';
+  ok.onclick=()=>commitEdit(idx,inp.value,inp.dataset.raw==='1');
+  const cancel=document.createElement('button');cancel.className='ebtn';cancel.textContent='✕ CANCEL';
+  cancel.onclick=()=>{editIdx=null;render();};
+  btns.append(ok,cancel);rowEl.append(idxSpan,inp,btns);
+  setTimeout(()=>inp.focus(),0);
+}
+
+function commitEdit(idx,newText,isRaw){
+  const s=strings[idx];if(!s)return;
+  // JP uses different char encoding — only raw token editing is supported
+  if(fileMagic===JP_MAGIC&&!isRaw){
+    stat('JP files use a different encoding. Use RAW mode to edit bytes directly.','warn');
+    return;
+  }
+  let newRaw;
+  if(isRaw){
+    newRaw=fromTok(newText.trim());
+  } else {
+    const orig=s.rawBytes;
+    let textStart=orig.length,si=0;
+    while(si<orig.length){
+      const b=orig[si];
+      if(b===0x00||b===0x04||b===0x01||b===0x02||b===0x03||b>=0x20){textStart=si;break;}
+      if(b===0x05||b===0x06||b===0x07||b===0x12){si+=3;continue;}
+      if(b===0x08||b===0x10||b===0x11){si+=1;continue;}
+      if(b===0x0A){si+=(si+1<orig.length&&orig[si+1]!==0)?2:4;continue;}
+      if(b===0x0B||b===0x0D){si+=4;continue;}
+      si+=2;
+    }
+    let endOp=0x06,syncV=0x3C;
+    for(let j=orig.length-3;j>=0;j--){if(orig[j]===0x05||orig[j]===0x06){endOp=orig[j];syncV=orig[j+1]|(orig[j+2]<<8);break;}}
+    const pre=orig.slice(0,textStart);const body=encode(newText.trim());
+    newRaw=new Uint8Array(pre.length+body.length+3);
+    newRaw.set(pre,0);newRaw.set(body,pre.length);
+    newRaw[pre.length+body.length]=endOp;
+    newRaw[pre.length+body.length+1]=syncV&0xFF;
+    newRaw[pre.length+body.length+2]=(syncV>>8)&0xFF;
+  }
+  s.rawBytes=newRaw;s.text=decode(newRaw);
+  editIdx=null;markDirty();
+  stat(`String 0x${idx.toString(16).toUpperCase()} updated`,'ok');
+  render();showDetail(idx);
+}
+
+// ── Fill empty slot ───────────────────────────────────────────────────────────
+function buildPreamble(){
+  // Copy preamble and end opcode from the first non-empty string in the file
+  let PREAMBLE=new Uint8Array([0x0A,0x00,0x00,0x00,0x08,0x07,0x0C,0x00]);
+  let ENDOP=0x06,SYNC=0x3C;
+  for(const s of strings){
+    const rb=s.rawBytes;if(rb.length<5)continue;
+    if(rb[rb.length-3]!==0x05&&rb[rb.length-3]!==0x06)continue;
+    let ts=rb.length,si=0;
+    while(si<rb.length){
+      const b=rb[si];
+      if(b===0x00||b===0x04||b===0x01||b===0x02||b===0x03||b>=0x20){ts=si;break;}
+      if(b===0x05||b===0x06||b===0x07||b===0x12){si+=3;continue;}
+      if(b===0x08||b===0x10||b===0x11){si+=1;continue;}
+      if(b===0x0A){si+=(si+1<rb.length&&rb[si+1]!==0)?2:4;continue;}
+      if(b===0x0B||b===0x0D){si+=4;continue;}
+      si+=2;
+    }
+    if(ts>0&&ts<rb.length){PREAMBLE=rb.slice(0,ts);ENDOP=rb[rb.length-3];SYNC=rb[rb.length-2]|(rb[rb.length-1]<<8);break;}
+  }
+  return{PREAMBLE,ENDOP,SYNC};
+}
+
+function makeRaw(text){
+  const{PREAMBLE,ENDOP,SYNC}=buildPreamble();
+  const body=encode(text.trim());
+  const newRaw=new Uint8Array(PREAMBLE.length+body.length+3);
+  newRaw.set(PREAMBLE,0);newRaw.set(body,PREAMBLE.length);
+  newRaw[PREAMBLE.length+body.length]=ENDOP;
+  newRaw[PREAMBLE.length+body.length+1]=SYNC&0xFF;
+  newRaw[PREAMBLE.length+body.length+2]=(SYNC>>8)&0xFF;
+  return newRaw;
+}
+
+function fillEmpty(){
+  if(!strings.length){stat('No file loaded.','err');return;}
+  const slot=strings.find(s=>s.rawBytes.length===0);
+  if(!slot){stat('No empty slots — use + NEW STRING to append beyond the current count.','err');return;}
+  const gameHex=slot.index.toString(16).toUpperCase().padStart(3,'0');
+  const text=prompt(`Fill empty slot 0x${gameHex}\n\nIn your script: push 0x${gameHex} → syscall 1\n\nEnter text:`);
+  if(text===null)return;
+  slot.rawBytes=makeRaw(text);slot.text=decode(slot.rawBytes);
+  markDirty();
+  stat(`Slot 0x${gameHex} filled — push 0x${gameHex} in your script`,'ok');
+  render();showDetail(slot.index);
+  setTimeout(()=>{const r=document.querySelector(`.srow[data-idx="${slot.index}"]`);if(r)r.scrollIntoView({block:'center',behavior:'smooth'});},60);
+}
+
+function addNewStr(){
+  if(!strings.length){stat('No file loaded.','err');return;}
+  const newIdx=strings.length;   // next index = current length (0-based, appended at end)
+  const gameHex=newIdx.toString(16).toUpperCase().padStart(3,'0');
+  const text=prompt(`Add NEW string at index 0x${gameHex}\n\nIn your script: push 0x${gameHex} → syscall 1\n\nEnter text:`);
+  if(text===null)return;
+  const newRaw=makeRaw(text);
+  strings.push({index:newIdx,rawBytes:newRaw,text:decode(newRaw)});
+  markDirty();
+  stat(`New string 0x${gameHex} added — push 0x${gameHex} in your script`,'ok');
+  render();showDetail(newIdx);
+  setTimeout(()=>{const r=document.querySelector(`.srow[data-idx="${newIdx}"]`);if(r)r.scrollIntoView({block:'center',behavior:'smooth'});},60);
+}
+
+
+function removeStr(idx){
+  if(idx<=fileCount)return;
+  strings=strings.filter(s=>s.index!==idx);
+  strings.forEach((s,i)=>s.index=i);
+  markDirty();stat('String removed.','warn');render();
+}
+
+// ── RAW mode ──────────────────────────────────────────────────────────────────
+function toggleRaw(){
+  rawMode=!rawMode;
+  const btn=document.getElementById('rawBtn');
+  btn.textContent=rawMode?'◉ RAW MODE':'○ RAW MODE';
+  btn.className=rawMode?'btn btn-a':'btn btn-a';
+  btn.style.borderColor=rawMode?'var(--accent)':'';
+  btn.style.boxShadow=rawMode?'0 0 10px rgba(0,212,255,.3)':'';
+  if(editIdx!==null){editIdx=null;}
+  render();
+}
+
+function markDirty(){
+  dirty=true;
+  const b=document.getElementById('saveBtn');
+  b.disabled=false;b.style.cssText='';
+}
+function stat(msg,type){
+  const el=document.getElementById('st');
+  el.textContent=msg;
+  el.className=type==='ok'?'sok':type==='err'?'ser':'swn';
+  setTimeout(()=>{if(el.textContent===msg){el.textContent='Ready';el.className='sok';}},6000);
+}
+
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=isLight?'☾ DARK':'☀ LIGHT';
+}
+
+function closeFile(){
+  strings=[];fileCount=0;fileUnknown=0;fileMagic='EvMsgUK';fname='';editIdx=null;dirty=false;
+  document.getElementById('fileName').textContent='No file loaded';
+  document.getElementById('mainLayout').style.display='none';
+  document.getElementById('dz').style.display='block';
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('saveBtn').style.cssText='';
+  document.getElementById('closeBtn').style.display='none';
+  document.getElementById('srch').value='';
+  stat('File closed.','ok');
+}
+</script>
+
+<!-- Export modal -->
+<div id="exportModal" class="modal-bg" style="display:none">
+  <div class="modal">
+    <div class="modal-hdr"><div class="dot"></div>EXPORT STRINGS FOR TRANSLATION</div>
+    <div class="modal-body">
+      <div class="modal-note">
+        Each string is on its own line. In-game line breaks are shown as <strong>↵</strong> — keep them in your translation so the game wraps the same way.<br>
+        Empty slots show as <strong>[empty]</strong> — leave those lines unchanged. Copy all, paste into Google Translate or your editor.
+      </div>
+      <textarea id="exportTa" class="modal-ta" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-a" onclick="copyExport()">⎘ COPY ALL</button>
+      <button class="btn btn-r" onclick="document.getElementById('exportModal').style.display='none'">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div id="importModal" class="modal-bg" style="display:none">
+  <div class="modal">
+    <div class="modal-hdr"><div class="dot"></div>IMPORT TRANSLATED STRINGS</div>
+    <div class="modal-body">
+      <div class="modal-note">
+        Paste your translated text below — same format as the export. One string per line, use <strong>↵</strong> for in-game line breaks, keep <strong>[empty]</strong> for empty slots.<br>
+        The number of lines must match the export exactly (<strong id="importExpect">0 strings</strong>). All game control codes (timing, color, etc.) are preserved automatically.
+      </div>
+      <textarea id="importTa" class="modal-ta" spellcheck="false" placeholder="Paste translated strings here…"></textarea>
+      <div id="importErr" style="color:var(--red);font-size:10px;margin-top:4px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-g" onclick="doImport()">✓ APPLY TRANSLATIONS</button>
+      <button class="btn btn-r" onclick="document.getElementById('importModal').style.display='none'">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Bulk export / import ──────────────────────────────────────────────────────
+
+function openExport(){
+  if(!strings.length){stat('No file loaded.','err');return;}
+  const lines=strings.map(s=>{
+    if(!s.rawBytes.length)return '[empty]';
+    return s.text.replace(/\n/g,'↵');
+  });
+  document.getElementById('exportTa').value=lines.join('\n');
+  document.getElementById('exportModal').style.display='flex';
+}
+
+function copyExport(){
+  const ta=document.getElementById('exportTa');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(()=>{
+    stat('All strings copied to clipboard!','ok');
+  }).catch(()=>{
+    document.execCommand('copy');
+    stat('Copied.','ok');
+  });
+}
+
+function openImport(){
+  if(!strings.length){stat('No file loaded.','err');return;}
+  document.getElementById('importExpect').textContent=strings.length+' strings';
+  document.getElementById('importTa').value='';
+  document.getElementById('importErr').style.display='none';
+  document.getElementById('importModal').style.display='flex';
+}
+
+function doImport(){
+  const raw=document.getElementById('importTa').value;
+  const lines=raw.split('\n');
+  // Trim a single trailing empty line from copy-paste
+  const trimmed=(lines.length>0&&lines[lines.length-1].trim()==='')?lines.slice(0,-1):lines;
+
+  if(trimmed.length!==strings.length){
+    const errEl=document.getElementById('importErr');
+    errEl.textContent=`Line count mismatch: got ${trimmed.length} lines, expected ${strings.length}. Make sure every string is on its own line and you haven't added or removed lines.`;
+    errEl.style.display='block';
+    return;
+  }
+
+  let changed=0;
+  for(let i=0;i<strings.length;i++){
+    const line=trimmed[i];
+    const s=strings[i];
+    if(line==='[empty]')continue;            // leave empty slots alone
+    const newText=line.replace(/↵/g,'\n');  // restore in-game line breaks
+    if(newText===s.text)continue;            // no change, skip
+
+    if(fileMagic===JP_MAGIC)continue;        // JP needs raw token edit, skip
+
+    const orig=s.rawBytes;
+    // Find where the text payload starts (scan past control code preamble)
+    let textStart=orig.length,si=0;
+    while(si<orig.length){
+      const b=orig[si];
+      if(b===0x00||b===0x04||b===0x01||b===0x02||b===0x03||b>=0x20){textStart=si;break;}
+      if(b===0x05||b===0x06||b===0x07||b===0x12){si+=3;continue;}
+      if(b===0x08||b===0x10||b===0x11){si+=1;continue;}
+      if(b===0x0A){si+=(si+1<orig.length&&orig[si+1]!==0)?2:4;continue;}
+      if(b===0x0B||b===0x0D){si+=4;continue;}
+      si+=2;
+    }
+    // Find end opcode (SYNC/DISP) at tail
+    let endOp=0x06,syncV=0x3C;
+    for(let j=orig.length-3;j>=0;j--){
+      if(orig[j]===0x05||orig[j]===0x06){endOp=orig[j];syncV=orig[j+1]|(orig[j+2]<<8);break;}
+    }
+    const pre=orig.slice(0,textStart);
+    const body=encode(newText.trim());
+    const newRaw=new Uint8Array(pre.length+body.length+3);
+    newRaw.set(pre,0);newRaw.set(body,pre.length);
+    newRaw[pre.length+body.length]=endOp;
+    newRaw[pre.length+body.length+1]=syncV&0xFF;
+    newRaw[pre.length+body.length+2]=(syncV>>8)&0xFF;
+    s.rawBytes=newRaw;s.text=decode(newRaw);
+    changed++;
+  }
+
+  if(changed===0){
+    stat('No strings changed — text was already identical.','warn');
+    document.getElementById('importModal').style.display='none';
+    return;
+  }
+  markDirty();
+  document.getElementById('importModal').style.display='none';
+  render();
+  stat(`Import complete — ${changed} string${changed!==1?'s':''} updated.`,'ok');
+}
+
+document.getElementById('exportModal').onclick=e=>{if(e.target.id==='exportModal')e.target.style.display='none';};
+document.getElementById('importModal').onclick=e=>{if(e.target.id==='importModal')e.target.style.display='none';};
+</script>
